@@ -1,0 +1,36 @@
+name: CCU Teacher Data Auto Update
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # 每天台灣時間早上 8 點執行 (UTC 00:00)
+  workflow_dispatch:       # 允許你手動點擊按鈕執行測試
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write    # 關鍵：允許機器人把產出的 index.html 存回你的專案
+    steps:
+      - name: 檢查程式碼
+        uses: actions/checkout@v3
+
+      - name: 設定 Python 環境
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: 安裝必要套件
+        run: |
+          pip install playwright pandas plotly
+          playwright install chromium
+
+      - name: 執行爬蟲程式
+        run: python scraper.py
+
+      - name: 自動提交並更新網頁檔案
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add index.html
+          git commit -m "🤖 自動更新教師瀏覽數據" || exit 0
+          git push
